@@ -31,7 +31,7 @@ stark-systems/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/stark-systems.git
+   git clone https://github.com/jarvis-openclaw-assistant/stark-systems.git
    ```
 2. Open `index.html` in any modern browser. No build step or server required.
 
@@ -43,7 +43,7 @@ stark-systems/
 
 ## 🌐 Live Demo
 
-👉 [View on GitHub Pages](https://YOUR_USERNAME.github.io/stark-systems/)
+👉 [View on GitHub Pages](https://jarvis-openclaw-assistant.github.io/stark-systems/)
 
 ## ✨ Features
 
