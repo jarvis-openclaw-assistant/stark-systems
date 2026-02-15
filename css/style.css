@@ -1,0 +1,557 @@
+/* ============================================
+   STARK SYSTEMS - AI Command Interface
+   ============================================ */
+
+/* --- CSS Variables (Theme) --- */
+:root {
+  --primary: #00d4ff;
+  --primary-dim: #00d4ff66;
+  --accent: #ff3e3e;
+  --bg: #0a0a0f;
+  --bg-panel: rgba(0, 212, 255, 0.05);
+  --border: rgba(0, 212, 255, 0.2);
+  --text: #c0e8ff;
+  --text-bright: #ffffff;
+  --glow: 0 0 20px var(--primary-dim);
+  --reactor-size: 220px;
+  --transition-speed: 0.6s;
+}
+
+/* --- Theme: Red --- */
+body.theme-red {
+  --primary: #ff3e3e;
+  --primary-dim: #ff3e3e66;
+  --accent: #00d4ff;
+  --border: rgba(255, 62, 62, 0.2);
+  --bg-panel: rgba(255, 62, 62, 0.05);
+  --text: #ffc0c0;
+}
+
+/* --- Theme: Gold --- */
+body.theme-gold {
+  --primary: #ffc107;
+  --primary-dim: #ffc10766;
+  --accent: #00d4ff;
+  --border: rgba(255, 193, 7, 0.2);
+  --bg-panel: rgba(255, 193, 7, 0.05);
+  --text: #fff3c0;
+}
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* --- Cinematic Background --- */
+.background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    radial-gradient(ellipse at center, rgba(0, 212, 255, 0.06) 0%, transparent 70%);
+  background-size: 60px 60px, 60px 60px, 100% 100%;
+  animation: bgShift 20s linear infinite;
+}
+
+@keyframes bgShift {
+  0%   { background-position: 0 0, 0 0, center; }
+  100% { background-position: 60px 60px, 60px 60px, center; }
+}
+
+/* ============================================
+   BOOT SEQUENCE
+   ============================================ */
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 1s ease;
+}
+
+.boot-overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.boot-text {
+  font-size: clamp(14px, 2vw, 18px);
+  color: var(--primary);
+  text-align: left;
+  min-height: 160px;
+  width: min(500px, 90vw);
+}
+
+.boot-text .line {
+  opacity: 0;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 2px solid var(--primary);
+  width: 0;
+}
+
+.boot-text .line.typing {
+  opacity: 1;
+  animation: typeLine 0.8s steps(30) forwards, blinkCaret 0.5s step-end infinite;
+}
+
+.boot-text .line.done {
+  opacity: 1;
+  width: 100%;
+  border-right: none;
+}
+
+@keyframes typeLine {
+  to { width: 100%; }
+}
+
+@keyframes blinkCaret {
+  50% { border-color: transparent; }
+}
+
+/* Boot progress bar */
+.boot-progress {
+  width: min(500px, 90vw);
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.boot-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px var(--primary);
+}
+
+.boot-percent {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--primary);
+  letter-spacing: 2px;
+}
+
+/* ============================================
+   MAIN INTERFACE
+   ============================================ */
+.interface {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.interface.visible {
+  opacity: 1;
+}
+
+/* ============================================
+   STARK INDUSTRIES BRANDING
+   ============================================ */
+.branding {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.branding h1 {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(18px, 3vw, 32px);
+  font-weight: 300;
+  letter-spacing: 12px;
+  text-transform: uppercase;
+  color: var(--text-bright);
+  text-shadow: 0 0 20px var(--primary-dim);
+  position: relative;
+}
+
+.branding h1::after {
+  content: '';
+  display: block;
+  width: 0%;
+  height: 1px;
+  background: var(--primary);
+  margin: 8px auto 0;
+  box-shadow: var(--glow);
+  animation: brandLine 2s ease forwards 4.5s;
+}
+
+@keyframes brandLine {
+  to { width: 100%; }
+}
+
+.branding .subtitle {
+  font-size: 10px;
+  letter-spacing: 6px;
+  color: var(--primary);
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+/* ============================================
+   ARC REACTOR
+   ============================================ */
+.reactor-container {
+  position: relative;
+  width: var(--reactor-size);
+  height: var(--reactor-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Outer rotating ring — rotation driven by requestAnimationFrame */
+.outer-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--primary-dim);
+  border-top: 2px solid var(--primary);
+  border-radius: 50%;
+}
+
+.outer-ring::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--primary);
+  border-radius: 50%;
+}
+
+/* Inner pulsing core */
+.inner-core {
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+  animation: pulse 2s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%      { transform: scale(1.1); opacity: 1; }
+}
+
+/* Radial glow halo */
+.reactor-glow {
+  position: absolute;
+  width: 160%;
+  height: 160%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--primary-dim) 0%, transparent 60%);
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.reactor-container:hover .reactor-glow,
+.reactor-container.engaged .reactor-glow {
+  opacity: 0.7;
+}
+
+.reactor-container:hover .inner-core,
+.reactor-container.engaged .inner-core {
+  animation-duration: 1s;
+}
+
+/* ============================================
+   HUD PANELS
+   ============================================ */
+.panels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.panel {
+  position: absolute;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+  min-width: 180px;
+  font-size: 13px;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease, filter 0.5s ease;
+  backdrop-filter: blur(4px);
+}
+
+.panel.visible {
+  opacity: 1;
+  transform: translate(0, 0) !important;
+}
+
+.panel.bright {
+  filter: brightness(1.4);
+}
+
+.panel h2 {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.panel p, .panel .value {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.panel .value.highlight {
+  color: var(--primary);
+  font-weight: bold;
+}
+
+/* Panel positions */
+.panel--status   { top: 15%;  left: 5%;   transform: translateX(-40px); }
+.panel--threat   { top: 15%;  right: 5%;  transform: translateX(40px); }
+.panel--energy   { bottom: 15%; left: 5%; transform: translateX(-40px); }
+.panel--location { bottom: 15%; right: 5%; transform: translateX(40px); }
+
+/* Energy bar */
+.energy-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.energy-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 6px var(--primary);
+}
+
+/* ============================================
+   LIVE DATA
+   ============================================ */
+.live-data {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.clock {
+  font-size: clamp(24px, 4vw, 36px);
+  color: var(--primary);
+  letter-spacing: 4px;
+  text-shadow: 0 0 10px var(--primary-dim);
+}
+
+.system-message {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 6px;
+  letter-spacing: 2px;
+  opacity: 0.7;
+  min-height: 18px;
+  transition: opacity 0.3s ease;
+}
+
+/* ============================================
+   ENGAGE BUTTON
+   ============================================ */
+.engage-btn {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 10px 28px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.engage-btn:hover {
+  background: var(--primary);
+  color: var(--bg);
+  box-shadow: var(--glow);
+}
+
+.engage-btn.engaged {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ============================================
+   THEME TOGGLE
+   ============================================ */
+.theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ============================================
+   SYSTEM FAILURE MODE (Hidden Easter Egg)
+   ============================================ */
+body.failure .background {
+  background:
+    linear-gradient(rgba(255, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.05) 1px, transparent 1px),
+    radial-gradient(ellipse at center, rgba(255, 0, 0, 0.08) 0%, transparent 70%);
+  background-size: 60px 60px, 60px 60px, 100% 100%;
+}
+
+body.failure .interface {
+  animation: glitch 0.1s infinite;
+}
+
+@keyframes glitch {
+  0%   { transform: translate(0); }
+  25%  { transform: translate(-2px, 1px); }
+  50%  { transform: translate(2px, -1px); }
+  75%  { transform: translate(-1px, -2px); }
+  100% { transform: translate(1px, 2px); }
+}
+
+body.failure .panel {
+  border-color: var(--accent) !important;
+}
+
+.failure-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(255, 0, 0, 0.05);
+  pointer-events: none;
+}
+
+body.failure .failure-overlay {
+  display: block;
+  animation: failFlash 0.5s infinite;
+}
+
+@keyframes failFlash {
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 1; }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  :root {
+    --reactor-size: 140px;
+  }
+
+  .panel {
+    position: relative;
+    min-width: unset;
+    width: 85vw;
+    margin: 6px auto;
+    transform: none !important;
+  }
+
+  .panels {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    pointer-events: auto;
+  }
+
+  .panel--status, .panel--threat, .panel--energy, .panel--location {
+    top: auto; bottom: auto; left: auto; right: auto;
+  }
+
+  .interface {
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding-top: 80px;
+  }
+
+  .live-data {
+    position: relative;
+    bottom: auto;
+    transform: none;
+    margin-top: 20px;
+    margin-bottom: 100px;
+  }
+
+  .engage-btn {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    margin-top: 16px;
+  }
+
+  .branding {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    margin-bottom: 16px;
+  }
+}
