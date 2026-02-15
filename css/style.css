@@ -2,10 +2,10 @@
    STARK SYSTEMS - AI Command Interface
    ============================================ */
 
-/* --- CSS Variables (Theme: Default Arc Blue) --- */
 :root {
   --primary: #00d4ff;
   --primary-dim: #00d4ff66;
+  --primary-rgb: 0, 212, 255;
   --accent: #ffffff;
   --bg: #0a0a0f;
   --bg-panel: rgba(0, 212, 255, 0.05);
@@ -19,10 +19,11 @@
   --engaged-dim: #00ffff88;
 }
 
-/* --- Theme: Mark III (Red & Gold — classic Iron Man) --- */
+/* --- Theme: Mark III (Red & Gold) --- */
 body.theme-mark3 {
   --primary: #c0392b;
   --primary-dim: #c0392b66;
+  --primary-rgb: 192, 57, 43;
   --accent: #f1c40f;
   --border: rgba(192, 57, 43, 0.25);
   --bg-panel: rgba(192, 57, 43, 0.06);
@@ -31,16 +32,30 @@ body.theme-mark3 {
   --engaged-dim: #e74c3c88;
 }
 
-/* --- Theme: War Machine (Gunmetal & White) --- */
+/* --- Theme: War Machine (Gunmetal) --- */
 body.theme-warmachine {
   --primary: #95a5a6;
   --primary-dim: #95a5a666;
+  --primary-rgb: 149, 165, 166;
   --accent: #ecf0f1;
   --border: rgba(149, 165, 166, 0.25);
   --bg-panel: rgba(149, 165, 166, 0.06);
   --text: #d5d8dc;
   --engaged: #bdc3c7;
   --engaged-dim: #bdc3c788;
+}
+
+/* --- Breach Mode (reactor click) --- */
+body.breach-mode {
+  --primary: #ff3e3e;
+  --primary-dim: #ff3e3e66;
+  --primary-rgb: 255, 62, 62;
+  --accent: #ff6b6b;
+  --border: rgba(255, 62, 62, 0.3);
+  --bg-panel: rgba(255, 62, 62, 0.08);
+  --text: #ffcccc;
+  --engaged: #ff5555;
+  --engaged-dim: #ff555588;
 }
 
 /* --- Reset & Base --- */
@@ -57,19 +72,21 @@ html, body {
   font-family: 'Courier New', monospace;
   background: var(--bg);
   color: var(--text);
+  transition: color 0.5s ease;
 }
 
-/* --- Cinematic Background --- */
+/* --- Background grid — uses CSS var so it changes with theme --- */
 .background {
   position: fixed;
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-    radial-gradient(ellipse at center, rgba(0, 212, 255, 0.06) 0%, transparent 70%);
+    linear-gradient(rgba(var(--primary-rgb), 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--primary-rgb), 0.03) 1px, transparent 1px),
+    radial-gradient(ellipse at center, rgba(var(--primary-rgb), 0.06) 0%, transparent 70%);
   background-size: 60px 60px, 60px 60px, 100% 100%;
   animation: bgShift 20s linear infinite;
+  transition: background 0.5s ease;
 }
 
 @keyframes bgShift {
@@ -133,7 +150,6 @@ html, body {
   50% { border-color: transparent; }
 }
 
-/* Boot progress bar */
 .boot-progress {
   width: min(500px, 90vw);
   height: 4px;
@@ -180,7 +196,7 @@ html, body {
 }
 
 /* ============================================
-   STARK INDUSTRIES BRANDING
+   BRANDING
    ============================================ */
 .branding {
   position: absolute;
@@ -235,6 +251,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .outer-ring {
@@ -283,7 +300,6 @@ html, body {
   pointer-events: none;
 }
 
-/* Engaged reactor — intensifies with theme-matched engaged colour */
 .reactor-container:hover .reactor-glow,
 .reactor-container.engaged .reactor-glow {
   opacity: 0.7;
@@ -299,6 +315,15 @@ html, body {
 .reactor-container.engaged .outer-ring {
   border-color: var(--engaged-dim);
   border-top-color: var(--engaged);
+}
+
+/* Breach mode — reactor pulses fast red */
+body.breach-mode .inner-core {
+  animation-duration: 0.5s !important;
+}
+
+body.breach-mode .reactor-glow {
+  opacity: 0.8 !important;
 }
 
 /* ============================================
@@ -320,7 +345,7 @@ html, body {
   font-size: 13px;
   pointer-events: auto;
   opacity: 0;
-  transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease, filter 0.5s ease;
+  transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease, filter 0.5s ease, border-color 0.5s ease, background 0.5s ease;
   backdrop-filter: blur(4px);
 }
 
@@ -341,12 +366,14 @@ html, body {
   margin-bottom: 10px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 6px;
+  transition: color 0.5s ease;
 }
 
 .panel p, .panel .value {
   font-size: 13px;
   color: var(--text);
   line-height: 1.6;
+  transition: color 0.5s ease;
 }
 
 .panel .value.highlight {
@@ -373,7 +400,7 @@ html, body {
   width: 0%;
   background: var(--primary);
   border-radius: 3px;
-  transition: width 0.5s ease;
+  transition: width 0.5s ease, background 0.5s ease;
   box-shadow: 0 0 6px var(--primary);
 }
 
@@ -394,6 +421,7 @@ html, body {
   color: var(--primary);
   letter-spacing: 4px;
   text-shadow: 0 0 10px var(--primary-dim);
+  transition: color 0.5s ease;
 }
 
 .system-message {
@@ -403,11 +431,11 @@ html, body {
   letter-spacing: 2px;
   opacity: 0.7;
   min-height: 18px;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, color 0.5s ease;
 }
 
 /* ============================================
-   ENGAGE BUTTON — legible in all states
+   ENGAGE BUTTON
    ============================================ */
 .engage-btn {
   position: absolute;
@@ -433,7 +461,6 @@ html, body {
   box-shadow: var(--glow);
 }
 
-/* Engaged: uses theme's engaged colour — always legible on dark bg */
 .engage-btn.engaged {
   border-color: var(--engaged);
   color: var(--engaged);
@@ -472,7 +499,7 @@ html, body {
 }
 
 /* ============================================
-   SYSTEM FAILURE MODE (Hidden Easter Egg)
+   SYSTEM FAILURE MODE (FFF Easter Egg)
    ============================================ */
 body.failure .background {
   background:
