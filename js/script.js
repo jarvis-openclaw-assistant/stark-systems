@@ -44,13 +44,157 @@
     'Flight stabilizers calibrated.'
   ];
 
-  /* --- Theme Cycling --- */
-  const themes = ['', 'theme-red', 'theme-gold'];
+  /* --- Theme Cycling (Iron Man palette) --- */
+  const themes = ['', 'theme-mark3', 'theme-warmachine'];
+  const themeLabels = ['ARC BLUE', 'MARK III', 'WAR MACHINE'];
   let themeIndex = 0;
 
   /* ============================================
+     AUDIO ENGINE
+     Synthesized sounds using Web Audio API
+     ============================================ */
+  let audioCtx = null;
+
+  function getAudioCtx() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+
+  /**
+   * Play a mechanical reactor hum — layered oscillators
+   * for a rich, cinematic power-up feel.
+   */
+  function playReactorHum() {
+    try {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const duration = 2.5;
+
+      // Layer 1: Deep bass hum
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(55, now);
+      osc1.frequency.linearRampToValueAtTime(80, now + duration);
+      gain1.gain.setValueAtTime(0, now);
+      gain1.gain.linearRampToValueAtTime(0.12, now + 0.5);
+      gain1.gain.linearRampToValueAtTime(0.06, now + duration);
+      gain1.gain.linearRampToValueAtTime(0, now + duration + 0.5);
+      osc1.connect(gain1).connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + duration + 0.5);
+
+      // Layer 2: Mid-range mechanical whine
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(120, now);
+      osc2.frequency.linearRampToValueAtTime(220, now + duration);
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.linearRampToValueAtTime(0.03, now + 0.8);
+      gain2.gain.linearRampToValueAtTime(0.015, now + duration);
+      gain2.gain.linearRampToValueAtTime(0, now + duration + 0.5);
+      osc2.connect(gain2).connect(ctx.destination);
+      osc2.start(now);
+      osc2.stop(now + duration + 0.5);
+
+      // Layer 3: High electrical crackle
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.type = 'square';
+      osc3.frequency.setValueAtTime(2400, now);
+      osc3.frequency.linearRampToValueAtTime(3200, now + 0.3);
+      osc3.frequency.linearRampToValueAtTime(1800, now + duration);
+      gain3.gain.setValueAtTime(0, now);
+      gain3.gain.linearRampToValueAtTime(0.008, now + 0.2);
+      gain3.gain.linearRampToValueAtTime(0.003, now + duration);
+      gain3.gain.linearRampToValueAtTime(0, now + duration + 0.3);
+      osc3.connect(gain3).connect(ctx.destination);
+      osc3.start(now);
+      osc3.stop(now + duration + 0.3);
+    } catch (e) {
+      // Audio not supported
+    }
+  }
+
+  /**
+   * Play a short UI confirmation tone.
+   */
+  function playEngageSound() {
+    try {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(660, now);
+      osc.frequency.linearRampToValueAtTime(880, now + 0.1);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch (e) {}
+  }
+
+  /**
+   * Play alarm sound for system failure mode.
+   */
+  function playAlarmSound() {
+    try {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(440, now);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.3);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } catch (e) {}
+  }
+
+  /* ============================================
+     SPEECH SYNTHESIS
+     Speaks "Awaiting your command, Sir." with
+     a British English voice when available.
+     ============================================ */
+  function speakEngageMessage() {
+    try {
+      if (!('speechSynthesis' in window)) return;
+
+      const utterance = new SpeechSynthesisUtterance('Awaiting your command, Sir.');
+      utterance.rate = 0.95;
+      utterance.pitch = 0.9;
+      utterance.volume = 0.8;
+
+      // Prefer a British English male voice (JARVIS-like)
+      const voices = speechSynthesis.getVoices();
+      const preferred = voices.find(v =>
+        v.lang.startsWith('en-GB') && /male|daniel|james|george/i.test(v.name)
+      ) || voices.find(v =>
+        v.lang.startsWith('en-GB')
+      ) || voices.find(v =>
+        v.lang.startsWith('en')
+      );
+
+      if (preferred) utterance.voice = preferred;
+
+      speechSynthesis.cancel(); // Clear any queued speech
+      speechSynthesis.speak(utterance);
+    } catch (e) {
+      // Speech not supported — text fallback already shown
+    }
+  }
+
+  /* ============================================
      BOOT SEQUENCE
-     Types lines one by one with a progress bar
+     Types lines one by one with a progress bar,
+     then plays reactor hum on completion.
      ============================================ */
   function runBoot() {
     let lineIndex = 0;
@@ -58,7 +202,8 @@
 
     function typeLine() {
       if (lineIndex >= totalLines) {
-        // Boot complete — transition to interface
+        // Boot complete — play reactor hum, then transition
+        playReactorHum();
         setTimeout(() => {
           bootOverlay.classList.add('fade-out');
           setTimeout(() => {
@@ -74,7 +219,6 @@
       div.textContent = bootLines[lineIndex];
       bootText.appendChild(div);
 
-      // Trigger typing animation
       requestAnimationFrame(() => {
         div.classList.add('typing');
       });
@@ -84,7 +228,6 @@
       progressFill.style.width = progress + '%';
       bootPercent.textContent = progress + '%';
 
-      // After typing finishes, mark done and proceed
       setTimeout(() => {
         div.classList.remove('typing');
         div.classList.add('done');
@@ -98,7 +241,6 @@
 
   /* ============================================
      SHOW INTERFACE
-     Fades in the main UI, then animates panels
      ============================================ */
   function showInterface() {
     interfaceEl.classList.add('visible');
@@ -107,9 +249,13 @@
     startMessages();
     startEnergyAnimation();
     startReactorAnimation();
+
+    // Pre-load speech voices (some browsers need this)
+    if ('speechSynthesis' in window) {
+      speechSynthesis.getVoices();
+    }
   }
 
-  /* --- Staggered panel reveal --- */
   function animatePanels() {
     panels.forEach((panel, i) => {
       setTimeout(() => {
@@ -125,7 +271,7 @@
 
   function startReactorAnimation() {
     function animate() {
-      rotationAngle += 0.3; // degrees per frame
+      rotationAngle += 0.3;
       outerRing.style.transform = 'rotate(' + rotationAngle + 'deg)';
       requestAnimationFrame(animate);
     }
@@ -165,12 +311,11 @@
   }
 
   /* ============================================
-     ANIMATED ENERGY PERCENTAGE
-     Fluctuates between 72–99%
+     ANIMATED ENERGY PERCENTAGE (72–99%)
      ============================================ */
   function startEnergyAnimation() {
     function update() {
-      const val = Math.floor(Math.random() * 28) + 72; // 72-99
+      const val = Math.floor(Math.random() * 28) + 72;
       energyFill.style.width = val + '%';
       energyValue.textContent = val + '%';
     }
@@ -180,6 +325,9 @@
 
   /* ============================================
      ENGAGE AI BUTTON
+     - Text + voice: "Awaiting your command, Sir."
+     - Reactor intensifies with theme colour
+     - Panels brighten
      ============================================ */
   let engaged = false;
 
@@ -191,38 +339,38 @@
       engageBtn.classList.add('engaged');
       reactorContainer.classList.add('engaged');
       panels.forEach(p => p.classList.add('bright'));
-      // Play subtle click sound if available
-      playSound('engage');
+      playEngageSound();
+      // Speak the line with a slight delay so sound plays first
+      setTimeout(speakEngageMessage, 250);
     } else {
       engageBtn.textContent = 'Engage AI';
       engageBtn.classList.remove('engaged');
       reactorContainer.classList.remove('engaged');
       panels.forEach(p => p.classList.remove('bright'));
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
     }
   });
 
   /* ============================================
      THEME TOGGLE
-     Cycles: Default (Blue) → Red → Gold → ...
+     Cycles: Arc Blue → Mark III → War Machine
      ============================================ */
   themeBtn.addEventListener('click', () => {
-    // Remove current theme
     document.body.classList.remove(themes[themeIndex]);
     themeIndex = (themeIndex + 1) % themes.length;
-    // Apply new theme
     if (themes[themeIndex]) {
       document.body.classList.add(themes[themeIndex]);
     }
-    const labels = ['BLUE', 'RED', 'GOLD'];
-    themeBtn.textContent = 'THEME: ' + labels[themeIndex];
+    themeBtn.textContent = 'THEME: ' + themeLabels[themeIndex];
   });
 
   /* ============================================
      HIDDEN SYSTEM FAILURE MODE
-     Triggered by pressing 'F' three times quickly
+     Press F three times quickly to trigger
      ============================================ */
   let failPresses = 0;
   let failTimer = null;
+  let failureActive = false;
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'f' || e.key === 'F') {
@@ -237,51 +385,20 @@
     }
   });
 
-  let failureActive = false;
-
   function toggleFailure() {
     failureActive = !failureActive;
     if (failureActive) {
       document.body.classList.add('failure');
       sysMsg.textContent = '> CRITICAL SYSTEM FAILURE — BREACH DETECTED';
       sysMsg.style.color = '#ff3e3e';
-      playSound('alarm');
+      playAlarmSound();
     } else {
       document.body.classList.remove('failure');
       sysMsg.style.color = '';
     }
   }
 
-  /* ============================================
-     SUBTLE UI SOUNDS (optional, gracefully skipped)
-     ============================================ */
-  function playSound(type) {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      gain.gain.value = 0.05;
-
-      if (type === 'engage') {
-        osc.frequency.value = 880;
-        osc.type = 'sine';
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-      } else if (type === 'alarm') {
-        osc.frequency.value = 440;
-        osc.type = 'sawtooth';
-        gain.gain.value = 0.08;
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-      }
-    } catch (e) {
-      // Sound not supported — gracefully skip
-    }
-  }
-
-  /* --- Kick off the boot sequence on load --- */
+  /* --- Kick off boot sequence --- */
   runBoot();
 
 })();

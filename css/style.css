@@ -2,11 +2,11 @@
    STARK SYSTEMS - AI Command Interface
    ============================================ */
 
-/* --- CSS Variables (Theme) --- */
+/* --- CSS Variables (Theme: Default Arc Blue) --- */
 :root {
   --primary: #00d4ff;
   --primary-dim: #00d4ff66;
-  --accent: #ff3e3e;
+  --accent: #ffffff;
   --bg: #0a0a0f;
   --bg-panel: rgba(0, 212, 255, 0.05);
   --border: rgba(0, 212, 255, 0.2);
@@ -15,26 +15,32 @@
   --glow: 0 0 20px var(--primary-dim);
   --reactor-size: 220px;
   --transition-speed: 0.6s;
+  --engaged: #00ffff;
+  --engaged-dim: #00ffff88;
 }
 
-/* --- Theme: Red --- */
-body.theme-red {
-  --primary: #ff3e3e;
-  --primary-dim: #ff3e3e66;
-  --accent: #00d4ff;
-  --border: rgba(255, 62, 62, 0.2);
-  --bg-panel: rgba(255, 62, 62, 0.05);
-  --text: #ffc0c0;
+/* --- Theme: Mark III (Red & Gold — classic Iron Man) --- */
+body.theme-mark3 {
+  --primary: #c0392b;
+  --primary-dim: #c0392b66;
+  --accent: #f1c40f;
+  --border: rgba(192, 57, 43, 0.25);
+  --bg-panel: rgba(192, 57, 43, 0.06);
+  --text: #f5c6a0;
+  --engaged: #e74c3c;
+  --engaged-dim: #e74c3c88;
 }
 
-/* --- Theme: Gold --- */
-body.theme-gold {
-  --primary: #ffc107;
-  --primary-dim: #ffc10766;
-  --accent: #00d4ff;
-  --border: rgba(255, 193, 7, 0.2);
-  --bg-panel: rgba(255, 193, 7, 0.05);
-  --text: #fff3c0;
+/* --- Theme: War Machine (Gunmetal & White) --- */
+body.theme-warmachine {
+  --primary: #95a5a6;
+  --primary-dim: #95a5a666;
+  --accent: #ecf0f1;
+  --border: rgba(149, 165, 166, 0.25);
+  --bg-panel: rgba(149, 165, 166, 0.06);
+  --text: #d5d8dc;
+  --engaged: #bdc3c7;
+  --engaged-dim: #bdc3c788;
 }
 
 /* --- Reset & Base --- */
@@ -231,7 +237,6 @@ html, body {
   justify-content: center;
 }
 
-/* Outer rotating ring — rotation driven by requestAnimationFrame */
 .outer-ring {
   position: absolute;
   width: 100%;
@@ -239,6 +244,7 @@ html, body {
   border: 2px solid var(--primary-dim);
   border-top: 2px solid var(--primary);
   border-radius: 50%;
+  transition: border-color 0.5s ease;
 }
 
 .outer-ring::before {
@@ -248,9 +254,9 @@ html, body {
   border: 1px solid var(--border);
   border-bottom: 1px solid var(--primary);
   border-radius: 50%;
+  transition: border-color 0.5s ease;
 }
 
-/* Inner pulsing core */
 .inner-core {
   width: 60%;
   height: 60%;
@@ -258,6 +264,7 @@ html, body {
   background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
   animation: pulse 2s ease-in-out infinite;
   z-index: 2;
+  transition: background 0.5s ease;
 }
 
 @keyframes pulse {
@@ -265,7 +272,6 @@ html, body {
   50%      { transform: scale(1.1); opacity: 1; }
 }
 
-/* Radial glow halo */
 .reactor-glow {
   position: absolute;
   width: 160%;
@@ -273,18 +279,26 @@ html, body {
   border-radius: 50%;
   background: radial-gradient(circle, var(--primary-dim) 0%, transparent 60%);
   opacity: 0.3;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.5s ease, background 0.5s ease;
   pointer-events: none;
 }
 
+/* Engaged reactor — intensifies with theme-matched engaged colour */
 .reactor-container:hover .reactor-glow,
 .reactor-container.engaged .reactor-glow {
   opacity: 0.7;
+  background: radial-gradient(circle, var(--engaged-dim) 0%, transparent 60%);
 }
 
 .reactor-container:hover .inner-core,
 .reactor-container.engaged .inner-core {
   animation-duration: 1s;
+  background: radial-gradient(circle, var(--engaged) 0%, transparent 70%);
+}
+
+.reactor-container.engaged .outer-ring {
+  border-color: var(--engaged-dim);
+  border-top-color: var(--engaged);
 }
 
 /* ============================================
@@ -340,13 +354,11 @@ html, body {
   font-weight: bold;
 }
 
-/* Panel positions */
 .panel--status   { top: 15%;  left: 5%;   transform: translateX(-40px); }
 .panel--threat   { top: 15%;  right: 5%;  transform: translateX(40px); }
 .panel--energy   { bottom: 15%; left: 5%; transform: translateX(-40px); }
 .panel--location { bottom: 15%; right: 5%; transform: translateX(40px); }
 
-/* Energy bar */
 .energy-bar {
   width: 100%;
   height: 6px;
@@ -395,7 +407,7 @@ html, body {
 }
 
 /* ============================================
-   ENGAGE BUTTON
+   ENGAGE BUTTON — legible in all states
    ============================================ */
 .engage-btn {
   position: absolute;
@@ -421,9 +433,18 @@ html, body {
   box-shadow: var(--glow);
 }
 
+/* Engaged: uses theme's engaged colour — always legible on dark bg */
 .engage-btn.engaged {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--engaged);
+  color: var(--engaged);
+  background: rgba(0, 0, 0, 0.6);
+  text-shadow: 0 0 8px var(--engaged-dim);
+  letter-spacing: 3px;
+}
+
+.engage-btn.engaged:hover {
+  background: var(--engaged);
+  color: var(--bg);
 }
 
 /* ============================================
@@ -474,7 +495,7 @@ body.failure .interface {
 }
 
 body.failure .panel {
-  border-color: var(--accent) !important;
+  border-color: #ff3e3e !important;
 }
 
 .failure-overlay {
